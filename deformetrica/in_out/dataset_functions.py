@@ -160,7 +160,7 @@ def split_filename(filename: str):
     :param filename:    filename to extract extension from
     :return:    tuple containing filename root and extension
     """
-    known_extensions = ['.png', '.nii', '.nii.gz', '.pny', '.vtk', '.stl']
+    known_extensions = ['.png', '.nii', '.nii.gz', '.npy', '.vtk', '.stl']
 
     for extension in known_extensions:
         if filename.endswith(extension):
