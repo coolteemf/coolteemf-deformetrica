@@ -335,3 +335,10 @@ class ScipyOptimize(AbstractEstimator):
 
         with open(self.state_file, 'wb') as f:
             pickle.dump(d, f)
+
+    def get_flow(self):
+        """
+        Returns the deformed coordinates.
+        :return:
+        """
+        return self.statistical_model.get_flow()

@@ -189,6 +189,45 @@ class Deformetrica:
 
         return statistical_model
 
+    def estimate_deterministic_atlas_step(self, template_specifications, dataset_specifications,
+                                     model_options={}, estimator_options={}):
+        """ Estimate deterministic atlas.
+        Given a family of objects, the atlas model proposes to learn a template shape which corresponds to a mean of the objects,
+        as well as to compute a low number of coordinates for each object from this template shape.
+
+        :param dict template_specifications: Dictionary containing the description of the task that is to be performed (such as estimating a registration, an atlas, ...)
+                as well as some hyper-parameters for the objects and the deformations used.
+        :param dict dataset_specifications: Dictionary containing the paths to the input objects from which a statistical model will be estimated.
+        :param dict model_options: Dictionary containing details about the model that is to be run.
+        :param dict estimator_options: Dictionary containing details about the optimization method. This will be passed to the optimizer's constructor.
+        :param bool write_output: Boolean that defines is output files will be written to disk.
+        """
+
+        # Check and completes the input parameters.
+        template_specifications, model_options, estimator_options = self.further_initialization(
+            'DeterministicAtlas', template_specifications, model_options, dataset_specifications, estimator_options)
+
+        # Instantiate dataset.
+        dataset = create_dataset(template_specifications,
+                                 dimension=model_options['dimension'], **dataset_specifications)
+        assert (dataset.is_cross_sectional()), "Cannot estimate an atlas from a non-cross-sectional dataset."
+
+        # Instantiate model.
+        statistical_model = DeterministicAtlas(template_specifications, dataset.number_of_subjects, **model_options)
+        statistical_model.initialize_noise_variance(dataset)
+        statistical_model.setup_multiprocess_pool(dataset)
+
+        # Instantiate estimator.
+        estimator = self.__instantiate_estimator(statistical_model, dataset, estimator_options, default=ScipyOptimize)
+
+        try:
+            # Launch.
+            flow = self.__launch_estimator(estimator, write_output=False, return_flow=True)
+        finally:
+            statistical_model.cleanup()
+
+        return statistical_model, flow
+
     def estimate_bayesian_atlas(self, template_specifications, dataset_specifications,
                                 model_options={}, estimator_options={}, write_output=True):
         """ Estimate bayesian atlas.
@@ -493,7 +532,7 @@ class Deformetrica:
     ####################################################################################################################
 
     @staticmethod
-    def __launch_estimator(estimator, write_output=True):
+    def __launch_estimator(estimator, write_output=True, return_flow = False):
         """
         Launch the estimator. This will iterate until a stop condition is reached.
 
@@ -521,6 +560,9 @@ class Deformetrica:
                         time.strftime("%M minutes and %S seconds", time.gmtime(end_time - start_time)))
         else:
             logger.info('>> Estimation took: %s' % time.strftime("%S seconds", time.gmtime(end_time - start_time)))
+
+        if return_flow:
+            return estimator.get_flow()
 
     def __instantiate_estimator(self, statistical_model, dataset, estimator_options, default=ScipyOptimize):
         if estimator_options['optimization_method_type'].lower() == 'GradientAscent'.lower():

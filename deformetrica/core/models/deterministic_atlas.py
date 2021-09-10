@@ -554,3 +554,11 @@ class DeterministicAtlas(AbstractStatisticalModel):
 
         # Momenta.
         write_3D_array(self.get_momenta(), output_dir, self.name + "__EstimatedParameters__Momenta.txt")
+
+    def get_flow(self):
+        """
+        Returns the deformed coordinates
+        :return:
+        """
+        deformed_points = self.exponential.get_template_points()
+        return deformed_points
