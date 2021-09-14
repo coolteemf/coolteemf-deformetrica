@@ -37,7 +37,7 @@ class Deformetrica:
     # Constructor & destructor.
     ####################################################################################################################
 
-    def __init__(self, output_dir=default.output_dir, verbosity='INFO'):
+    def __init__(self, output_dir=default.output_dir, verbosity='INFO', log_suffix=""):
         """
         Constructor
         :param str output_dir: Path to the output directory
@@ -57,7 +57,7 @@ class Deformetrica:
 
         # file logger
         logger_file_handler = logging.FileHandler(
-            os.path.join(self.output_dir, time.strftime("%Y-%m-%d-%H%M%S", time.gmtime()) + '_info.log'), mode='w')
+            os.path.join(self.output_dir, time.strftime("%Y-%m-%d-%H%M%S", time.gmtime()) + f'_infoN{log_suffix}.log'), mode='w')
         logger_file_handler.setFormatter(logging.Formatter(default.logger_format))
         logger_file_handler.setLevel(logging.INFO)
         logger.addHandler(logger_file_handler)
