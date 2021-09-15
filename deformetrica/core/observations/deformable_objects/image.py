@@ -10,6 +10,11 @@ from ....support import utilities
 import logging
 logger = logging.getLogger(__name__)
 
+def make2DGrid(shape, device=None):
+    m, n = shape
+    xd = torch.linspace(0, m-1, m, device=device)
+    yd = torch.linspace(0, n-1, n, device=device)
+    return torch.stack(torch.meshgrid(xd, yd))
 
 class Image:
     """
@@ -108,9 +113,13 @@ class Image:
         if self.dimension == 2:
             if not self.downsampling_factor == 1:
                 shape = deformed_points.shape
-                deformed_voxels = torch.nn.functional.interpolate(deformed_voxels.permute(2, 0, 1).contiguous().view(1, shape[2], shape[0], shape[1]),
-                                                                  size=image_shape, mode='bilinear', align_corners=True)[0].permute(1, 2, 0).contiguous()
-
+                if deformed_voxels.isnan().sum() ==0:
+                    deformed_voxels = torch.nn.functional.interpolate(deformed_voxels.permute(2, 0, 1).contiguous().view(1, shape[2], shape[0], shape[1]),
+                                                                      size=image_shape, mode='bilinear', align_corners=True)[0].permute(1, 2, 0).contiguous()
+                    logger.error("NaN encountered. Setting displacement to 0.")
+                else:
+                    # Setting displacement to 0
+                    deformed_voxels = make2DGrid(image_shape, deformed_voxels.device).permute(1,2,0)
             u, v = deformed_voxels.view(-1, 2)[:, 0], deformed_voxels.view(-1, 2)[:, 1]
 
             u1 = torch.floor(u.detach())
@@ -125,12 +134,10 @@ class Image:
             fv = v - v1
             gu = (u1 + 1) - u
             gv = (v1 + 1) - v
-
             deformed_intensities = (intensities[u1.type(tensor_integer_type), v1.type(tensor_integer_type)] * gu * gv +
                                     intensities[u1.type(tensor_integer_type), v2.type(tensor_integer_type)] * gu * fv +
                                     intensities[u2.type(tensor_integer_type), v1.type(tensor_integer_type)] * fu * gv +
                                     intensities[u2.type(tensor_integer_type), v2.type(tensor_integer_type)] * fu * fv).view(image_shape)
-
         elif self.dimension == 3:
             if not self.downsampling_factor == 1:
                 shape = deformed_points.shape
