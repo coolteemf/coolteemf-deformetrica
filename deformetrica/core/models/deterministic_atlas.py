@@ -112,7 +112,7 @@ class DeterministicAtlas(AbstractStatisticalModel):
 
                  gpu_mode=default.gpu_mode,
                  process_per_gpu=default.process_per_gpu,
-
+                 freeze_DOFs = None,
                  **kwargs):
 
         AbstractStatisticalModel.__init__(self, name='DeterministicAtlas', number_of_processes=number_of_processes,
@@ -138,7 +138,7 @@ class DeterministicAtlas(AbstractStatisticalModel):
             dense_mode=dense_mode,
             kernel=kernel_factory.factory(deformation_kernel_type,
                                           gpu_mode=gpu_mode,
-                                          kernel_width=deformation_kernel_width),
+                                          kernel_width=deformation_kernel_width, freeze_DOFs= freeze_DOFs),
             shoot_kernel_type=shoot_kernel_type,
             number_of_time_points=number_of_time_points,
             use_rk2_for_shoot=use_rk2_for_shoot, use_rk2_for_flow=use_rk2_for_flow)

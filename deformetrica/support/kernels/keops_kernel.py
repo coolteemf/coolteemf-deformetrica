@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class KeopsKernel(AbstractKernel):
-    def __init__(self, gpu_mode=default.gpu_mode, kernel_width=None, cuda_type=None, **kwargs):
+    def __init__(self, gpu_mode=default.gpu_mode, kernel_width=None, cuda_type=None, freeze_DOFs=None, **kwargs):
         super().__init__('keops', gpu_mode, kernel_width)
 
         if cuda_type is None:
@@ -24,6 +24,7 @@ class KeopsKernel(AbstractKernel):
         self.point_cloud_convolve = []
         self.varifold_convolve = []
         self.gaussian_convolve_gradient_x = []
+        self.freeze_DOFs = freeze_DOFs
 
         for dimension in [2, 3]:
             self.gaussian_convolve.append(Genred(
@@ -74,6 +75,10 @@ class KeopsKernel(AbstractKernel):
             x, y, p = (self._move_to_device(t, gpu_mode=self.gpu_mode) for t in [x, y, p])
             assert x.device == y.device == p.device, 'tensors must be on the same device. x.device=' + str(x.device) \
                                                      + ', y.device=' + str(y.device) + ', p.device=' + str(p.device)
+            if self.freeze_DOFs is not None:
+                mask = self._move_to_device(torch.ones(p.shape, dtype=p.dtype), gpu_mode=self.gpu_mode)
+                mask[:,[self.freeze_DOFs]] = 0
+                p = p * mask
 
             d = x.size(1)
             gamma = self.gamma.to(x.device, dtype=x.dtype)
